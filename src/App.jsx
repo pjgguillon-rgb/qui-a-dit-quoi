@@ -293,6 +293,81 @@ const Button = ({ children, onClick, disabled, variant = 'primary', style = {}, 
   );
 };
 
+// ============ MODALE DE CONFIRMATION DE SORTIE ============
+const ConfirmLeaveModal = ({ onConfirm, onCancel, theme }) => (
+  <div style={{
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+  }} onClick={onCancel}>
+    <div onClick={(e) => e.stopPropagation()} className="qdq-pop" style={{
+      background: theme.bg, borderRadius: 24, padding: 28,
+      width: '100%', maxWidth: 380, textAlign: 'center'
+    }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>👋</div>
+      <h3 className="qdq-display" style={{
+        fontSize: 24, fontWeight: 700, color: theme.text,
+        margin: '0 0 10px 0'
+      }}>
+        Quitter la partie ?
+      </h3>
+      <p style={{
+        color: theme.textSoft, fontSize: 14, lineHeight: 1.5,
+        margin: '0 0 24px 0'
+      }}>
+        Tu peux toujours rejoindre de nouveau avec le code du salon.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Button variant="accent" theme={theme} onClick={onConfirm}>
+          Oui, quitter
+        </Button>
+        <Button variant="secondary" theme={theme} onClick={onCancel}>
+          Non, rester
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
+// ============ BARRE DU HAUT (visible sur tous les écrans de partie) ============
+const TopBar = ({ room, playerId, onLeave, onOpenSettings, theme, showPhase }) => {
+  const me = room?.players?.find(p => p.id === playerId);
+  const currentRound = room?.settings?.currentRound || 0;
+  const totalRounds = room?.settings?.totalRounds || 0;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      marginBottom: 20, gap: 12
+    }}>
+      <button onClick={onLeave} className="qdq-btn" style={{
+        background: 'transparent', border: `1.5px solid ${theme.border}`,
+        color: theme.textSoft, fontSize: 13, cursor: 'pointer',
+        padding: '8px 14px', borderRadius: 100, fontWeight: 600,
+        display: 'inline-flex', alignItems: 'center', gap: 6
+      }}>
+        <ChevronLeft size={14} /> Quitter
+      </button>
+
+      {showPhase && currentRound > 0 && (
+        <div style={{
+          fontSize: 11, color: theme.textSoft, fontWeight: 600,
+          textTransform: 'uppercase', letterSpacing: '0.08em',
+          textAlign: 'center'
+        }}>
+          Manche {currentRound}{totalRounds > 0 ? `/${totalRounds}` : ''}
+        </div>
+      )}
+
+      <button onClick={onOpenSettings} className="qdq-btn" style={{
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        padding: 8, color: theme.textSoft
+      }}>
+        <Settings size={20} />
+      </button>
+    </div>
+  );
+};
+
 // ============ MODAL PARAMÈTRES ============
 const SettingsModal = ({ onClose, theme, themeName, setThemeName, soundEnabled, setSoundEnabled, notifEnabled, setNotifEnabled }) => (
   <div style={{
@@ -879,7 +954,7 @@ const LobbyScreen = ({ room, playerId, onStart, onLeave, onKick, onUpdateTotalRo
 };
 
 // ============ ÉCRAN RÉPONSE ============
-const AnswerScreen = ({ room, playerId, onSubmit, onTyping, theme, soundEnabled }) => {
+const AnswerScreen = ({ room, playerId, onSubmit, onTyping, onLeave, onOpenSettings, theme, soundEnabled }) => {
   const [answer, setAnswer] = useState('');
   const [bluff, setBluff] = useState('');
   const me = room.players.find(p => p.id === playerId);
@@ -897,6 +972,7 @@ const AnswerScreen = ({ room, playerId, onSubmit, onTyping, theme, soundEnabled 
         vibrate(50, soundEnabled);
         onSubmit(targetId, null);
       }}
+      onLeave={onLeave} onOpenSettings={onOpenSettings}
       theme={theme} />;
   }
 
@@ -922,7 +998,8 @@ const AnswerScreen = ({ room, playerId, onSubmit, onTyping, theme, soundEnabled 
   if (myAnswer) {
     return (
       <div style={{ padding: '32px 24px', maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginTop: 40 }}>
+        <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
           <div className="qdq-pop" style={{
             width: 80, height: 80, borderRadius: '50%', background: theme.success, color: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -967,6 +1044,7 @@ const AnswerScreen = ({ room, playerId, onSubmit, onTyping, theme, soundEnabled 
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar emoji={me.emoji} name={me.name} color={me.color} size={32} />
@@ -1032,7 +1110,7 @@ const AnswerScreen = ({ room, playerId, onSubmit, onTyping, theme, soundEnabled 
 };
 
 // ============ ÉCRAN "QUI EST LE PLUS..." ============
-const MostLikelyScreen = ({ room, playerId, onSubmit, theme }) => {
+const MostLikelyScreen = ({ room, playerId, onSubmit, onLeave, onOpenSettings, theme }) => {
   const [selected, setSelected] = useState(null);
   const me = room.players.find(p => p.id === playerId);
   const myAnswer = room.answers?.[playerId];
@@ -1041,7 +1119,8 @@ const MostLikelyScreen = ({ room, playerId, onSubmit, theme }) => {
   if (myAnswer) {
     return (
       <div style={{ padding: '32px 24px', maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginTop: 40 }}>
+        <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
           <div className="qdq-pop" style={{
             width: 80, height: 80, borderRadius: '50%', background: theme.success, color: 'white',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1068,6 +1147,7 @@ const MostLikelyScreen = ({ room, playerId, onSubmit, theme }) => {
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar emoji={me.emoji} name={me.name} color={me.color} size={32} />
@@ -1135,7 +1215,7 @@ const MostLikelyScreen = ({ room, playerId, onSubmit, theme }) => {
 };
 
 // ============ ÉCRAN DEVINER (CLASSIQUE) ============
-const GuessScreenClassic = ({ room, playerId, onSubmit, theme, soundEnabled }) => {
+const GuessScreenClassic = ({ room, playerId, onSubmit, onLeave, onOpenSettings, theme, soundEnabled }) => {
   const [guesses, setGuesses] = useState({});
   const [currentAnswerIdx, setCurrentAnswerIdx] = useState(0);
   const myGuesses = room.guesses?.[playerId];
@@ -1186,7 +1266,7 @@ const GuessScreenClassic = ({ room, playerId, onSubmit, theme, soundEnabled }) =
   };
 
   if (hasGuessed) {
-    return <WaitingScreen room={room} theme={theme} message="Devinettes envoyées" subtitle="En attente des autres..." icon="🔮" />;
+    return <WaitingScreen room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} message="Devinettes envoyées" subtitle="En attente des autres..." icon="🔮" />;
   }
 
   if (shuffledAnswers.length === 0) {
@@ -1199,6 +1279,7 @@ const GuessScreenClassic = ({ room, playerId, onSubmit, theme, soundEnabled }) =
 
   return (
     <div style={{ padding: '32px 24px 40px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 11, color: theme.purple, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
           ✦ À toi de deviner
@@ -1283,7 +1364,7 @@ const GuessScreenClassic = ({ room, playerId, onSubmit, theme, soundEnabled }) =
 };
 
 // ============ ÉCRAN DEVINER (BLUFF - PHASE 1 : identifier les bluffs) ============
-const GuessScreenBluffPhase1 = ({ room, playerId, onSubmit, theme, soundEnabled }) => {
+const GuessScreenBluffPhase1 = ({ room, playerId, onSubmit, onLeave, onOpenSettings, theme, soundEnabled }) => {
   const [markedAsBluff, setMarkedAsBluff] = useState(new Set());
   const myBluffGuesses = room.bluffGuesses?.[playerId];
   const hasSubmitted = !!myBluffGuesses;
@@ -1316,7 +1397,7 @@ const GuessScreenBluffPhase1 = ({ room, playerId, onSubmit, theme, soundEnabled 
   };
 
   if (hasSubmitted) {
-    return <WaitingScreen room={room} theme={theme} message="Bluffs identifiés" subtitle="Phase 2 bientôt..." icon="🎭" />;
+    return <WaitingScreen room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} message="Bluffs identifiés" subtitle="Phase 2 bientôt..." icon="🎭" />;
   }
 
   // Nombre de bluffs attendus = nombre de bluffs des AUTRES joueurs
@@ -1325,6 +1406,7 @@ const GuessScreenBluffPhase1 = ({ room, playerId, onSubmit, theme, soundEnabled 
 
   return (
     <div style={{ padding: '32px 24px 40px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 11, color: theme.purple, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
           🎭 Phase 1/2 · Démasquer les bluffs
@@ -1379,7 +1461,7 @@ const GuessScreenBluffPhase1 = ({ room, playerId, onSubmit, theme, soundEnabled 
 };
 
 // ============ ÉCRAN DEVINER (BLUFF - PHASE 2 : attribuer les vraies) ============
-const GuessScreenBluffPhase2 = ({ room, playerId, onSubmit, theme, soundEnabled }) => {
+const GuessScreenBluffPhase2 = ({ room, playerId, onSubmit, onLeave, onOpenSettings, theme, soundEnabled }) => {
   const [guesses, setGuesses] = useState({});
   const [currentIdx, setCurrentIdx] = useState(0);
   const myGuesses = room.guesses?.[playerId];
@@ -1427,7 +1509,7 @@ const GuessScreenBluffPhase2 = ({ room, playerId, onSubmit, theme, soundEnabled 
   };
 
   if (hasSubmitted) {
-    return <WaitingScreen room={room} theme={theme} message="Attributions envoyées" subtitle="En attente des autres..." icon="🔮" />;
+    return <WaitingScreen room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} message="Attributions envoyées" subtitle="En attente des autres..." icon="🔮" />;
   }
 
   if (realAnswers.length === 0) {
@@ -1440,6 +1522,7 @@ const GuessScreenBluffPhase2 = ({ room, playerId, onSubmit, theme, soundEnabled 
 
   return (
     <div style={{ padding: '32px 24px 40px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 11, color: theme.accent, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
           🎭 Phase 2/2 · Attribuer les vraies réponses
@@ -1521,18 +1604,20 @@ const GuessScreenBluffPhase2 = ({ room, playerId, onSubmit, theme, soundEnabled 
 };
 
 // ============ ÉCRAN ATTENTE ============
-const WaitingScreen = ({ room, theme, message, subtitle, icon = '⏳' }) => {
+const WaitingScreen = ({ room, playerId, onLeave, onOpenSettings, theme, message, subtitle, icon = '⏳' }) => {
   const totalPlayers = room.players.length;
   const answeredCount = room.phase === 'guessing_bluff_p1'
     ? Object.keys(room.bluffGuesses || {}).length
     : Object.keys(room.guesses || {}).length;
 
   return (
-    <div style={{ padding: '32px 24px', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+    <div style={{ padding: '32px 24px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
+      <div style={{ textAlign: 'center' }}>
       <div className="qdq-pop" style={{
         width: 80, height: 80, borderRadius: '50%', background: theme.purple, color: 'white',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        margin: '60px auto 24px', fontSize: 36
+        margin: '30px auto 24px', fontSize: 36
       }}>{icon}</div>
       <h2 className="qdq-display" style={{ fontSize: 32, fontWeight: 700, color: theme.text, margin: 0 }}>
         {message}
@@ -1543,12 +1628,13 @@ const WaitingScreen = ({ room, theme, message, subtitle, icon = '⏳' }) => {
           {answeredCount}<span style={{ color: theme.textMuted }}>/{totalPlayers}</span>
         </div>
       </div>
+      </div>
     </div>
   );
 };
 
 // ============ ÉCRAN RÉSULTATS ============
-const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, theme, soundEnabled }) => {
+const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, onOpenSettings, theme, soundEnabled }) => {
   const [revealIdx, setRevealIdx] = useState(-1);
   const isHost = room.hostId === playerId;
   const mode = room.settings?.questionMode || 'classic';
@@ -1659,6 +1745,7 @@ const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, theme, soun
 
     return (
       <div style={{ padding: '32px 24px 40px', maxWidth: 480, margin: '0 auto' }}>
+        <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 11, color: theme.purple, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
             ✦ Résultats du vote
@@ -1733,6 +1820,7 @@ const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, theme, soun
 
   return (
     <div style={{ padding: '32px 24px 40px', maxWidth: 480, margin: '0 auto' }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={true} />
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <div style={{ fontSize: 11, color: theme.accent, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
           ✦ Révélations {mode === 'bluff' && '· Mode Bluff'}
@@ -1942,7 +2030,7 @@ const EndButtons = ({ isHost, isLastRound, onNext, onEndGame, onLeave, hostName,
 );
 
 // ============ ÉCRAN FIN DE PARTIE ============
-const EndGameScreen = ({ room, playerId, onReplay, onLeave, theme, soundEnabled }) => {
+const EndGameScreen = ({ room, playerId, onReplay, onLeave, onOpenSettings, theme, soundEnabled }) => {
   const totalScores = room.settings?.totalScores || {};
   const sortedPlayers = [...room.players].sort((a, b) => (totalScores[b.id] || 0) - (totalScores[a.id] || 0));
   const winner = sortedPlayers[0];
@@ -1956,7 +2044,8 @@ const EndGameScreen = ({ room, playerId, onReplay, onLeave, theme, soundEnabled 
 
   return (
     <div style={{ padding: '32px 24px 40px', maxWidth: 480, margin: '0 auto' }}>
-      <div className="qdq-pop" style={{ textAlign: 'center', marginTop: 20, marginBottom: 32 }}>
+      <TopBar room={room} playerId={playerId} onLeave={onLeave} onOpenSettings={onOpenSettings} theme={theme} showPhase={false} />
+      <div className="qdq-pop" style={{ textAlign: 'center', marginTop: 10, marginBottom: 32 }}>
         <div style={{ fontSize: 60, marginBottom: 12 }}>🏆</div>
         <div style={{ fontSize: 11, color: theme.accent, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
           Partie terminée
@@ -2062,6 +2151,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('qdq_sound') !== 'false');
   const [notifEnabled, setNotifEnabled] = useState(() => localStorage.getItem('qdq_notif') === 'true');
   const [showSettings, setShowSettings] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const unsubRef = useRef(null);
   const prevPhaseRef = useRef(null);
   const theme = THEMES[themeName];
@@ -2294,6 +2384,16 @@ export default function App() {
     clearLocalSession();
     setRoomCode(null);
     setRoom(null);
+    setShowLeaveConfirm(false);
+  };
+
+  // Demande de confirmation avant de quitter (sauf depuis le lobby où on quitte directement)
+  const handleAskLeave = () => {
+    if (!room || room.phase === 'lobby') {
+      handleLeave();
+    } else {
+      setShowLeaveConfirm(true);
+    }
   };
 
   return (
@@ -2317,26 +2417,33 @@ export default function App() {
             soundEnabled={soundEnabled} />
         ) : room.phase === 'answering' ? (
           <AnswerScreen room={room} playerId={playerId} onSubmit={handleSubmitAnswer}
-            onTyping={handleTyping} theme={theme} soundEnabled={soundEnabled} />
+            onTyping={handleTyping} onLeave={handleAskLeave}
+            onOpenSettings={() => setShowSettings(true)}
+            theme={theme} soundEnabled={soundEnabled} />
         ) : room.phase === 'guessing' ? (
           <GuessScreenClassic room={room} playerId={playerId}
-            onSubmit={handleSubmitGuesses}
+            onSubmit={handleSubmitGuesses} onLeave={handleAskLeave}
+            onOpenSettings={() => setShowSettings(true)}
             theme={theme} soundEnabled={soundEnabled} />
         ) : room.phase === 'guessing_bluff_p1' ? (
           <GuessScreenBluffPhase1 room={room} playerId={playerId}
-            onSubmit={handleSubmitBluffGuesses}
+            onSubmit={handleSubmitBluffGuesses} onLeave={handleAskLeave}
+            onOpenSettings={() => setShowSettings(true)}
             theme={theme} soundEnabled={soundEnabled} />
         ) : room.phase === 'guessing_bluff_p2' ? (
           <GuessScreenBluffPhase2 room={room} playerId={playerId}
-            onSubmit={handleSubmitGuesses}
+            onSubmit={handleSubmitGuesses} onLeave={handleAskLeave}
+            onOpenSettings={() => setShowSettings(true)}
             theme={theme} soundEnabled={soundEnabled} />
         ) : room.phase === 'results' ? (
           <ResultsScreen room={room} playerId={playerId}
-            onNext={handleNextRound} onEndGame={handleEndGame} onLeave={handleLeave}
+            onNext={handleNextRound} onEndGame={handleEndGame} onLeave={handleAskLeave}
+            onOpenSettings={() => setShowSettings(true)}
             theme={theme} soundEnabled={soundEnabled} />
         ) : room.phase === 'endgame' ? (
           <EndGameScreen room={room} playerId={playerId} onReplay={handleReplay}
-            onLeave={handleLeave} theme={theme} soundEnabled={soundEnabled} />
+            onLeave={handleAskLeave} onOpenSettings={() => setShowSettings(true)}
+            theme={theme} soundEnabled={soundEnabled} />
         ) : null}
       </div>
       {showSettings && (
@@ -2344,6 +2451,11 @@ export default function App() {
           themeName={themeName} setThemeName={setThemeName}
           soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled}
           notifEnabled={notifEnabled} setNotifEnabled={setNotifEnabled} />
+      )}
+      {showLeaveConfirm && (
+        <ConfirmLeaveModal theme={theme}
+          onConfirm={handleLeave}
+          onCancel={() => setShowLeaveConfirm(false)} />
       )}
     </div>
   );
