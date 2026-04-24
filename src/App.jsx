@@ -86,6 +86,21 @@ const GAME_MODES = {
 
 // ============ THÈMES ============
 const THEMES = {
+  persona: {
+    name: 'Persona', icon: '✨',
+    bg: '#fbf9ff',
+    text: '#1e1b3a', textSoft: '#5e5a7e', textMuted: '#9995b8',
+    border: '#e6e0f5', borderDark: '#d6cef0',
+    card: '#ffffff', dark: '#1e1b3a',
+    accent: '#e63d82', accentBg: '#b84bde', accentText: '#b84bde',
+    success: '#4ade80', purple: '#4a62d8',
+    displayFont: "'Fraunces', Georgia, serif",
+    bodyFont: "'DM Sans', sans-serif",
+    grain: `radial-gradient(circle at 15% 20%, rgba(74, 98, 216, 0.12), transparent 45%),
+            radial-gradient(circle at 85% 75%, rgba(230, 61, 130, 0.12), transparent 45%),
+            radial-gradient(circle at 60% 40%, rgba(184, 75, 222, 0.1), transparent 50%),
+            radial-gradient(circle at 30% 80%, rgba(74, 98, 216, 0.08), transparent 45%)`
+  },
   classique: {
     name: 'Classique', icon: '☕',
     bg: '#faf7f2', text: '#1a1a1a', textSoft: '#6b655c', textMuted: '#a8a299',
@@ -227,10 +242,24 @@ const GlobalStyles = ({ theme }) => (
     @keyframes qdq-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
     @keyframes qdq-float { 0% { transform: translateY(100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(-100px) rotate(720deg); opacity: 0; } }
     @keyframes qdq-slide-in { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes qdq-glow-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(183, 75, 222, 0); }
+      50% { box-shadow: 0 0 30px 0 rgba(183, 75, 222, 0.35); }
+    }
+    @keyframes qdq-gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
     .qdq-fadeup { animation: qdq-fadeup 0.4s ease-out both; }
     .qdq-pop { animation: qdq-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
     .qdq-pulse { animation: qdq-pulse 1.8s ease-in-out infinite; }
     .qdq-shake { animation: qdq-shake 0.4s ease-in-out; }
+    .qdq-glow-pulse { animation: qdq-glow-pulse 3s ease-in-out infinite; }
+    .qdq-gradient-accent {
+      background: linear-gradient(90deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%);
+      background-size: 200% auto;
+      animation: qdq-gradient-shift 4s ease infinite;
+    }
     .qdq-btn { transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
     .qdq-btn:active { transform: translateY(1px) scale(0.98); }
     .qdq-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -290,10 +319,29 @@ const Avatar = ({ emoji, name, color, size = 40 }) => {
 };
 
 const Button = ({ children, onClick, disabled, variant = 'primary', style = {}, fullWidth = true, theme }) => {
+  const isPersona = theme.name === 'Persona';
   const variants = {
-    primary: { background: theme.dark, color: theme.darkIsLight ? theme.bg : theme.bg, border: 'none' },
-    secondary: { background: 'transparent', color: theme.text, border: `1.5px solid ${theme.text}` },
-    accent: { background: theme.accent, color: 'white', border: 'none' }
+    primary: {
+      background: isPersona
+        ? 'linear-gradient(135deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%)'
+        : theme.dark,
+      color: theme.darkIsLight ? theme.bg : theme.bg,
+      border: 'none',
+      boxShadow: isPersona ? '0 4px 24px rgba(183, 75, 222, 0.35)' : 'none'
+    },
+    secondary: {
+      background: 'transparent',
+      color: theme.text,
+      border: `1.5px solid ${isPersona ? 'rgba(183, 75, 222, 0.5)' : theme.text}`
+    },
+    accent: {
+      background: isPersona
+        ? 'linear-gradient(135deg, #e63d82 0%, #b84bde 100%)'
+        : theme.accent,
+      color: 'white',
+      border: 'none',
+      boxShadow: isPersona ? '0 4px 20px rgba(230, 61, 130, 0.4)' : 'none'
+    }
   };
   return (
     <button className="qdq-btn" onClick={onClick} disabled={disabled} style={{
@@ -571,22 +619,35 @@ const HomeScreen = ({ onCreate, onJoin, theme, themeName, setThemeName, onOpenSe
         <Settings size={22} />
       </button>
 
-      <div className="qdq-fadeup" style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }}>
-        <img src="/persona-logo.png" alt="PERSONA"
-          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-          style={{ maxWidth: '100%', width: 340, height: 'auto', margin: '0 auto', display: 'block' }}
-        />
-        <h1 className="qdq-display" style={{
+      <div className="qdq-fadeup" style={{ textAlign: 'center', marginTop: 20, marginBottom: 36 }}>
+        <div style={{
+          display: 'inline-block',
+          background: theme.name === 'Persona' ? '#1a1630' : (theme.darkIsLight ? 'transparent' : 'white'),
+          borderRadius: 24,
+          padding: '22px 26px',
+          boxShadow: theme.name === 'Persona'
+            ? '0 12px 40px rgba(184, 75, 222, 0.25), 0 4px 16px rgba(74, 98, 216, 0.15)'
+            : (theme.darkIsLight ? 'none' : '0 10px 40px rgba(155, 45, 198, 0.15), 0 2px 10px rgba(45, 58, 158, 0.08)'),
+          marginBottom: 4,
+          maxWidth: '100%',
+          position: 'relative'
+        }}>
+          <img src="/persona-logo.png" alt="PERSONA"
+            onError={(e) => { e.target.style.display = 'none'; const fb = e.target.parentNode.parentNode.querySelector('.persona-fallback'); if (fb) fb.style.display = 'block'; e.target.parentNode.style.display = 'none'; }}
+            style={{ maxWidth: '100%', width: 280, height: 'auto', display: 'block' }}
+          />
+        </div>
+        <h1 className="persona-fallback qdq-display" style={{
           display: 'none',
           fontSize: 64, fontWeight: 800, margin: 0, lineHeight: 0.95,
-          background: `linear-gradient(90deg, #2d3a9e 0%, #9b2dc6 50%, #d62d5e 100%)`,
+          background: `linear-gradient(90deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%)`,
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text'
         }}>
           PERSON<span style={{
             display: 'inline-block',
-            background: `conic-gradient(from 0deg, #2d3a9e, #9b2dc6, #d62d5e, #f5a623, #2d3a9e)`,
+            background: `conic-gradient(from 0deg, #4a62d8, #b84bde, #e63d82, #f5a623, #4a62d8)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
@@ -594,8 +655,9 @@ const HomeScreen = ({ onCreate, onJoin, theme, themeName, setThemeName, onOpenSe
           <span>A</span>
         </h1>
         <p className="qdq-italic" style={{
-          marginTop: 12, color: theme.textSoft, fontSize: 15, lineHeight: 1.4,
-          maxWidth: 340, margin: '12px auto 0', fontWeight: 500
+          marginTop: 18, color: theme.textSoft, fontSize: 15, lineHeight: 1.4,
+          maxWidth: 340, margin: '18px auto 0', fontWeight: 500,
+          letterSpacing: '0.02em'
         }}>
           Jouez, démasquez, apprenez à vous connaître
         </p>
@@ -797,8 +859,13 @@ const LobbyScreen = ({ room, playerId, onStart, onLeave, onKick, onUpdateTotalRo
       </div>
 
       <div className="qdq-pop" style={{
-        background: theme.dark, borderRadius: 24, padding: 32, textAlign: 'center',
-        marginBottom: 28, position: 'relative', overflow: 'hidden'
+        background: theme.name === 'Persona'
+          ? 'linear-gradient(135deg, #1a1630 0%, #2d1e4a 50%, #3d1e3a 100%)'
+          : theme.dark,
+        borderRadius: 24, padding: 32, textAlign: 'center',
+        marginBottom: 28, position: 'relative', overflow: 'hidden',
+        border: theme.name === 'Persona' ? '1px solid rgba(183, 75, 222, 0.25)' : 'none',
+        boxShadow: theme.name === 'Persona' ? '0 8px 40px rgba(155, 45, 198, 0.2)' : 'none'
       }}>
         <div className="qdq-grain" style={{ position: 'absolute', inset: 0, opacity: 0.6 }} />
         <div style={{ position: 'relative' }}>
@@ -809,9 +876,14 @@ const LobbyScreen = ({ room, playerId, onStart, onLeave, onKick, onUpdateTotalRo
             {room.code}
           </div>
           <button onClick={copyCode} className="qdq-btn" style={{
-            background: copied ? theme.success : theme.accentBg, color: theme.dark, border: 'none',
+            background: copied ? theme.success : (theme.name === 'Persona'
+              ? 'linear-gradient(90deg, #e63d82 0%, #b84bde 100%)'
+              : theme.accentBg),
+            color: copied ? 'white' : (theme.name === 'Persona' ? 'white' : theme.dark),
+            border: 'none',
             padding: '10px 18px', borderRadius: 100, fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6
+            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+            boxShadow: theme.name === 'Persona' && !copied ? '0 4px 16px rgba(230, 61, 130, 0.4)' : 'none'
           }}>
             {copied ? <><Check size={14}/> Copié !</> : <><Copy size={14}/> Copier le code</>}
           </button>
@@ -1186,17 +1258,24 @@ const AnswerScreen = ({ room, playerId, onSubmit, onTyping, onLeave, onOpenSetti
       </div>
 
       <div className="qdq-pop" style={{
-        background: theme.accentBg, borderRadius: 24, padding: 32,
-        marginBottom: 24, position: 'relative'
+        background: theme.name === 'Persona'
+          ? 'linear-gradient(135deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%)'
+          : theme.accentBg,
+        borderRadius: 24, padding: 32,
+        marginBottom: 24, position: 'relative',
+        boxShadow: theme.name === 'Persona' ? '0 8px 32px rgba(184, 75, 222, 0.3)' : 'none'
       }}>
         <div style={{
           position: 'absolute', top: 16, left: 20, fontSize: 11, fontWeight: 700,
-          letterSpacing: '0.15em', textTransform: 'uppercase', color: '#1a1a1a', opacity: 0.5
+          letterSpacing: '0.15em', textTransform: 'uppercase',
+          color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
+          opacity: theme.name === 'Persona' ? 0.7 : 0.5
         }}>
           ✦ {needsBluff ? 'Mode Bluff' : 'La question'}
         </div>
         <p className="qdq-display" style={{
-          fontSize: 28, fontWeight: 700, color: '#1a1a1a',
+          fontSize: 28, fontWeight: 700,
+          color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
           lineHeight: 1.15, marginTop: 24, marginBottom: 0
         }}>
           {room.question}
@@ -1314,17 +1393,24 @@ const DuoAnswerScreen = ({ room, playerId, onSubmit, onLeave, onOpenSettings, on
       </div>
 
       <div className="qdq-pop" style={{
-        background: theme.accentBg, borderRadius: 24, padding: 32,
-        marginBottom: 24, position: 'relative'
+        background: theme.name === 'Persona'
+          ? 'linear-gradient(135deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%)'
+          : theme.accentBg,
+        borderRadius: 24, padding: 32,
+        marginBottom: 24, position: 'relative',
+        boxShadow: theme.name === 'Persona' ? '0 8px 32px rgba(184, 75, 222, 0.3)' : 'none'
       }}>
         <div style={{
           position: 'absolute', top: 16, left: 20, fontSize: 11, fontWeight: 700,
-          letterSpacing: '0.15em', textTransform: 'uppercase', color: '#1a1a1a', opacity: 0.5
+          letterSpacing: '0.15em', textTransform: 'uppercase',
+          color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
+          opacity: theme.name === 'Persona' ? 0.7 : 0.5
         }}>
           ✦ La question
         </div>
         <p className="qdq-display" style={{
-          fontSize: 26, fontWeight: 700, color: '#1a1a1a',
+          fontSize: 26, fontWeight: 700,
+          color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
           lineHeight: 1.15, marginTop: 24, marginBottom: 0
         }}>
           {room.question}
@@ -2086,11 +2172,25 @@ const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, onOpenSetti
           </h2>
         </div>
 
-        <div style={{ background: theme.accentBg, borderRadius: 16, padding: 16, marginBottom: 20 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#1a1a1a', opacity: 0.6, marginBottom: 4 }}>
+        <div style={{
+          background: theme.name === 'Persona'
+            ? 'linear-gradient(135deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%)'
+            : theme.accentBg,
+          borderRadius: 16, padding: 16, marginBottom: 20,
+          boxShadow: theme.name === 'Persona' ? '0 4px 20px rgba(184, 75, 222, 0.25)' : 'none'
+        }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
+            color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
+            opacity: theme.name === 'Persona' ? 0.7 : 0.6, marginBottom: 4
+          }}>
             La question
           </div>
-          <p className="qdq-display" style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.3 }}>
+          <p className="qdq-display" style={{
+            fontSize: 18, fontWeight: 700,
+            color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
+            margin: 0, lineHeight: 1.3
+          }}>
             {room.question}
           </p>
         </div>
@@ -2182,11 +2282,26 @@ const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, onOpenSetti
         )}
       </div>
 
-      <div style={{ background: theme.accentBg, borderRadius: 16, padding: 16, marginBottom: 24 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#1a1a1a', opacity: 0.6, marginBottom: 4 }}>
+      <div style={{
+        background: theme.name === 'Persona'
+          ? 'linear-gradient(135deg, #4a62d8 0%, #b84bde 50%, #e63d82 100%)'
+          : theme.accentBg,
+        borderRadius: 16, padding: 16, marginBottom: 24,
+        boxShadow: theme.name === 'Persona' ? '0 4px 20px rgba(184, 75, 222, 0.25)' : 'none'
+      }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
+          color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
+          opacity: theme.name === 'Persona' ? 0.7 : 0.6,
+          marginBottom: 4
+        }}>
           La question
         </div>
-        <p className="qdq-display" style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.3 }}>
+        <p className="qdq-display" style={{
+          fontSize: 18, fontWeight: 700,
+          color: theme.name === 'Persona' ? 'white' : '#1a1a1a',
+          margin: 0, lineHeight: 1.3
+        }}>
           {room.question}
         </p>
       </div>
@@ -2292,7 +2407,14 @@ const ResultsScreen = ({ room, playerId, onNext, onLeave, onEndGame, onOpenSetti
 
       {allRevealed && (
         <div className="qdq-fadeup">
-          <div style={{ background: theme.dark, borderRadius: 20, padding: 24, marginBottom: 20 }}>
+          <div style={{
+            background: theme.name === 'Persona'
+              ? 'linear-gradient(135deg, #1a1630 0%, #2d1e4a 100%)'
+              : theme.dark,
+            borderRadius: 20, padding: 24, marginBottom: 20,
+            border: theme.name === 'Persona' ? '1px solid rgba(183, 75, 222, 0.2)' : 'none',
+            boxShadow: theme.name === 'Persona' ? '0 8px 32px rgba(155, 45, 198, 0.15)' : 'none'
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <Trophy size={18} color={theme.accentBg} />
               <div style={{ fontSize: 12, color: theme.accentText, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
@@ -2405,8 +2527,13 @@ const EndGameScreen = ({ room, playerId, onReplay, onLeave, onOpenSettings, them
 
       {winner && (
         <div className="qdq-pop" style={{
-          background: theme.dark, borderRadius: 24, padding: 32,
-          textAlign: 'center', marginBottom: 24, position: 'relative', overflow: 'hidden'
+          background: theme.name === 'Persona'
+            ? 'linear-gradient(135deg, #1a1630 0%, #3d1e3a 50%, #2d1e4a 100%)'
+            : theme.dark,
+          borderRadius: 24, padding: 32,
+          textAlign: 'center', marginBottom: 24, position: 'relative', overflow: 'hidden',
+          border: theme.name === 'Persona' ? '1px solid rgba(230, 61, 130, 0.3)' : 'none',
+          boxShadow: theme.name === 'Persona' ? '0 12px 48px rgba(230, 61, 130, 0.25)' : 'none'
         }}>
           <div className="qdq-grain" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
           <div style={{ position: 'relative' }}>
@@ -2494,7 +2621,7 @@ export default function App() {
   const [playerId] = useState(() => generatePlayerId());
   const [roomCode, setRoomCode] = useState(null);
   const [room, setRoom] = useState(null);
-  const [themeName, setThemeName] = useState(() => localStorage.getItem('qdq_theme') || 'classique');
+  const [themeName, setThemeName] = useState(() => localStorage.getItem('qdq_theme') || 'persona');
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('qdq_sound') !== 'false');
   const [notifEnabled, setNotifEnabled] = useState(() => localStorage.getItem('qdq_notif') === 'true');
   const [showSettings, setShowSettings] = useState(false);
